@@ -1,4 +1,3 @@
-
 <?php
 
 function theme_enqueue_styles() {
@@ -464,17 +463,16 @@ function verify_license_no() {
 
     $data = json_decode($data);
 
+
+
     $out = array();
 
     if (!empty($data[0])) {
         if ($data[0]->brandstof_omschrijving == "Elektriciteit") {
             $out["status"] = "true";
         } elseif ($data[0]->brandstof_omschrijving == "Diesel") {
-            if ($data[0]->emissiecode_omschrijving == 4 || $data[0]->emissiecode_omschrijving == 5 || $data[0]->emissiecode_omschrijving == 6) {
-                $out["status"] = "true";
-            } elseif ($data[0]->emissiecode_omschrijving == 1 || $data[0]->emissiecode_omschrijving == 2 || $data[0]->emissiecode_omschrijving == 3) {
-                $out["status"] = "false";
-            } elseif (!in_array($data[0]->emissiecode_omschrijving, array(1,2,3,4,5,6), true ) || empty($data[0]->emissiecode_omschrijving) || !property_exists($data[0], 'emissiecode_omschrijving')) {
+            if (!in_array($data[0]->emissiecode_omschrijving, array(1,2,3,4,5,6), true ) || empty($data[0]->emissiecode_omschrijving) || !property_exists($data[0], 'emissiecode_omschrijving')) {
+
                 $url2 = 'https://opendata.rdw.nl/resource/m9d7-ebf2.json?$$app_token=8vcQ8OLlts6JUlYjeXY7FM2Np&kenteken='.$license_sanitised;
                 $data2 = file_get_contents($url2);
                 $data2 = json_decode($data2);
@@ -487,13 +485,14 @@ function verify_license_no() {
                     $out["status"] = "false";
                 }
             }
+
         } else {
+
             $url3 = 'https://opendata.rdw.nl/resource/m9d7-ebf2.json?$$app_token=8vcQ8OLlts6JUlYjeXY7FM2Np&kenteken='.$license_sanitised;
             $data3 = file_get_contents($url3);
             $data3 = json_decode($data3);
             $merk = isset($data3[0]->merk) ? $data3[0]->merk : "";
             $handelsbenaming = isset($data3[0]->handelsbenaming) ? $data3[0]->handelsbenaming : "";
-
 
             if (intval($data3[0]->datum_eerste_toelating) > 19921231) {
                 $out["status"] = "true";
