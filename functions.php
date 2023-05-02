@@ -49,7 +49,7 @@ function license_plate_check( $atts ) {
             position: relative;
         }
 
-        input#subForm {
+        input.licenseSubForm[id*='subForm'] {
             background: #f0b504 none repeat scroll 0 0;
             border-radius: 0px 5px 5px 0px;
             min-height: 55px;
@@ -257,22 +257,79 @@ function license_plate_check( $atts ) {
             padding: 0px;
         }
 
+        .removeThisLicensePlate{
+            font-size: 0.8em;
+            text-align: right;
+            text-decoration: underline;
+        }
+
+        .addAnotherLicense{
+            display: flex;
+            justify-content: flex-end;
+            font-size: 0.8em;
+        }
+
+        .addAnotherLicense a{
+            text-decoration: underline;
+        }
+
+        .license-plate-box{
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+
         @media only screen and (max-width: 600px) {
-            input#subForm {
+            input.licenseSubForm[id*='subForm'] {
                 font-size: 32px;
             }
         }
 
     </style>
     <div class="license-plate-box">
-        <label for="subForm" id="kenteken-input-label">vul hier het kenteken in:</label>
+        <label for="subForm[0]" id="kenteken-input-label">vul hier het kenteken in:</label>
         <div class="inputgroup kenteken-input-holder">
-            <input type="text" id="subForm" name="i" autocomplete="off" class="kenteken-input" maxlength="8">
+            <input type="text" id="subForm[0]" name="i[0]" autocomplete="off" class="kenteken-input licenseSubForm" maxlength="8">
             <span class="check"></span>
         </div>
         <p class="result"></p>
     </div>
+    <span class="addAnotherLicense"><a href="javascript:;">Add another licenseplate</a></span>
     <script>
+
+        function updateLicenceCode() {
+            var licenseCode = '';
+            jQuery('.licenseSubForm').each(function(){
+                if(jQuery(this).parents('.license-plate-box').find('.result.model').length){
+                    licenseCode += licenseCode != "" ? ',' : '';
+                    licenseCode += jQuery(this).val();
+                }else{
+                    jQuery('button.submit').attr('disabled',true);
+                }
+            })
+            jQuery("#licensecode").val(licenseCode);
+        }
+
+        jQuery(document).on('click','.removeThisLicensePlate',function(){
+            var THIS = jQuery(this).parents('.license-plate-box');
+            updateLicenceCode();
+            THIS.remove();
+        })
+
+        jQuery(document).on('click','.addAnotherLicense a',function(){
+            var clone = jQuery(this).parent().prev().clone();
+            var currentID = clone.find('.licenseSubForm').attr('id').replace(/\D/g, "");
+            var nextID = parseInt(currentID) + 1;
+            clone.find('input').val("").end();
+            clone.find('.check').removeClass('incorrect');
+            clone.find('.result').removeClass('model').text('');
+            clone.find('label').attr("for","subForm["+nextID+"]");
+            clone.find('.licenseSubForm').attr("id","subForm["+nextID+"]");
+            clone.find('.licenseSubForm').attr("name","i["+nextID+"]");
+            if ( clone.find('.removeThisLicensePlate').length < 1 ){
+                clone.append('<a href="javascript:;" class="removeThisLicensePlate">Remove</a>');
+            }
+            jQuery(clone).insertBefore(jQuery(this).parent());
+        });
 
         jQuery(document).ready(function() {
             // Get the input fields and address element
@@ -365,19 +422,18 @@ function license_plate_check( $atts ) {
                 });
             }
             updateKentekenFormat();
-            jQuery(".kenteken-input").keyup(function() {
+            jQuery(document).on('keyup', ".kenteken-input", (function() {
                 updateKentekenFormat();
                 if (str_replaceAll(jQuery(this).val(),"-","").length >= 6) {
                     //jQuery("#kenteken-input-label").removeClass("failedtofind").html("vul hier het kenteken in:");
                 }
-            });
+            }));
 
-            jQuery('input#subForm').on('change', function() {
+            jQuery(document).on('change', 'input.licenseSubForm',function() {
                 //if (jQuery(this).val().length === 6) {
+                var THIS = jQuery(this).parents('.license-plate-box');
+                updateLicenceCode();
                 if (jQuery(this).val().length < 9) {
-                    let text = jQuery(this).val();
-                    console.log(text)
-                    jQuery("#licensecode").val(text);
                     const plateNo = jQuery(this).val();
                     const newPlateNo = plateNo.replace(/-/g, "")
                     jQuery.ajax({
@@ -395,45 +451,538 @@ function license_plate_check( $atts ) {
                             console.log(res);
                             if (res.status == "true") {
                                 if(res.merk!=='') {
-                                    jQuery('.result').addClass('model')
-                                    jQuery('.check').removeClass('incorrect')
-                                    jQuery('.check').removeClass('correct')
-                                    jQuery('.result').html('<div class="modal-details">Merk : '+res.merk+' | Model : '+res.handelsbenaming+"</div>")
+                                    THIS.find('.result').addClass('model')
+                                    THIS.find('.check').removeClass('incorrect')
+                                    THIS.find('.check').removeClass('correct')
+                                    THIS.find('.result').html('<div class="modal-details">Merk : '+res.merk+' | Model : '+res.handelsbenaming+"</div>")
                                     jQuery('button.submit').attr('disabled',false);
 
                                 } else {
-                                    jQuery('.result').removeClass('model')
-                                    jQuery('.check').removeClass('incorrect')
-                                    jQuery('.check').addClass('correct')
-                                    jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
+                                    THIS.find('.result').removeClass('model')
+                                    THIS.find('.check').removeClass('incorrect')
+                                    THIS.find('.check').addClass('correct')
+                                    THIS.find('.result').html('Uw voertuig heeft een groene milieusticker nodig')
                                     jQuery('button.submit').attr('disabled',false);
                                 }
                             } else {
-                                jQuery('.result').removeClass('model')
+                                THIS.find('.result').removeClass('model')
+                                THIS.find('.check').removeClass('correct')
+                                THIS.find('.check').addClass('incorrect')
+                                THIS.find('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
+                            }
+                            updateLicenceCode();
+                            /*
+                            if(res.brandstof_omschrijving == "Elektriciteit") {
+                                jQuery('.check').removeClass('incorrect')
+                                jQuery('.check').addClass('correct')
+                                jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
+                            } else {
                                 jQuery('.check').removeClass('correct')
                                 jQuery('.check').addClass('incorrect')
                                 jQuery('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
                             }
-                            /*
-                          if(res.brandstof_omschrijving == "Elektriciteit") {
-                              jQuery('.check').removeClass('incorrect')
-                              jQuery('.check').addClass('correct')
-                              jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
-                          } else {
-                              jQuery('.check').removeClass('correct')
-                              jQuery('.check').addClass('incorrect')
-                              jQuery('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
-                          }
 
-                          if(res.length == 1) {
-                              jQuery('.check').removeClass('incorrect')
-                              jQuery('.check').addClass('correct')
-                              jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
-                          } else {
-                              jQuery('.check').removeClass('correct')
-                              jQuery('.check').addClass('incorrect')
-                              jQuery('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
-                          } */
+                            if(res.length == 1) {
+                                jQuery('.check').removeClass('incorrect')
+                                jQuery('.check').addClass('correct')
+                                jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
+                            } else {
+                                jQuery('.check').removeClass('correct')
+                                jQuery('.check').addClass('incorrect')
+                                jQuery('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
+                            } */
+                        },
+                        error: function(jqXHR, textStatus, errorThrown) {
+                            console.error(errorThrown); // Handle any error that occurs during the AJAX request
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+    <?php
+    return ob_get_clean();
+}
+function license_plate_check_development( $atts ) {
+    ob_start();
+    ?>
+    <style>
+        label#kenteken-input-label {
+            color: #282828;
+            display: block;
+            font-size: 12px;
+            font-weight: 400;
+            padding: 0;
+        }
+        .net-total {
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .inputgroup.kenteken-input-holder {
+            width: 100%;
+            min-height: 55px;
+            display: flex;
+            margin-bottom: 20px;
+            margin-bottom: 10px;
+            border: 2px solid #000;
+            border-radius: 7px;
+        }
+
+        .inputgroup.kenteken-input-holder:before {
+            content: " ";
+            background-color: #2b4c9c;
+            border-radius: 3px 0 0 3px;
+            background-image: url(https://milieustickers.com/wp-content/uploads/2023/02/kenteken_eu.png);
+            background-size: 48% auto;
+            background-position: center;
+            background-repeat: no-repeat;
+            width: 50px;
+            display: block;
+            position: relative;
+        }
+
+        input.licenseSubForm[id*='subForm'] {
+            background: #f0b504 none repeat scroll 0 0;
+            border-radius: 0px 5px 5px 0px;
+            min-height: 55px;
+            padding: 6px 4px 6px 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 40px;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin: 0px;
+            color:black;
+        }
+
+        span.check.correct {
+            background: url(https://milieustickers.com/wp-content/uploads/2023/02/checks.png) no-repeat;
+            width: 24px;
+            height: 24px;
+            background-size: 42px;
+            background-repeat: no-repeat;
+            background-position: -23px 1px;
+            position: absolute;
+            margin-top: 75px;
+            margin-top: 67px;
+            margin-left: 13px;
+        }
+        span.check.incorrect {
+            background: url(https://milieustickers.com/wp-content/uploads/2023/02/checks.png) no-repeat;
+            width: 22px;
+            height: 24px;
+            background-size: 42px;
+            background-repeat: no-repeat;
+            background-position: 0px 1px;
+            position: absolute;
+            margin-top: 75px;
+            margin-top: 67px;
+            margin-left: 13px;
+        }.item.item--has-image {
+             display: flex;
+             align-items: center;
+             justify-content: space-between;
+         }
+
+        .item.item--has-image img {
+            width: 66px;
+        }
+        button.button.button--primary.button--medium.button--standard.button--has-label.button--has-prefix {
+            background: #2b2b3c;
+            border: none;
+            color: white;
+            width: 100%;
+            border-radius: 4px;
+            padding: 13px 0px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        button.button.button--primary.button--medium.button--standard.button--has-label.button--has-prefix:hover {
+            opacity: 0.8;
+        }
+
+        span.button__suffix {
+            color: #666;
+            font-weight: bold;
+        }
+        .item__text {
+            width: 50%;
+        }
+        span.lbl {
+            font-size: 16px;
+            line-height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+
+        .wpcf7 p {
+            margin: 0px;
+        }
+        .wpcf7 {
+            margin-bottom: 20px;
+        }
+        sc-format-number.item__scratch-price.hydrated {
+            text-decoration: line-through;
+            color: #666;
+            font-size: 14px;
+            font-weight: normal;
+        }
+        .fusion-alert.alert.custom.alert-custom.fusion-alert-center.wpcf7-response-output.alert-dismissable.alert-shadow.error.fusion-danger {
+            display: none;
+        }
+        span.wpcf7-not-valid-tip {
+            font-size: 14px;
+            line-height: 100%;
+            position: relative;
+            top: -5px;
+        }
+        input[type="text"],
+        input[type="email"],
+        input#street,input#housenumber,
+        input#city,input#postcode,
+        input.wpcf7-form-control.wpcf7-text,
+        input.wpcf7-text.wpcf7-email {
+            flex: 1 1 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: start;
+            position: relative;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: var(--sc-input-font-family);
+            font-weight: var(--sc-input-font-weight);
+            letter-spacing: var(--sc-input-letter-spacing);
+            background-color: var(--sc-input-background-color);
+            border: solid 1px #dce0e6;
+            vertical-align: middle;
+            box-shadow: var(--sc-input-box-shadow);
+            transition: var(--sc-transition-fast) color, var(--sc-transition-fast) border, var(--sc-transition-fast) box-shadow;
+            cursor: text;
+            padding: 0px 20px;
+            margin: 0px;
+            border-radius: 0px;
+            height: 46px;
+        }
+        sc-format-number.hydrated {font-size: 17px;font-weight: bold;color: #666;}
+        p.result {
+            width: 300px;
+            width: 100%;
+            font-size: 12px;
+            margin: 0px;
+            padding: 0px;
+            margin-top: -15px;
+            padding-left: 45px;
+            line-height: 17px;
+            margin-top: 5px;
+        }
+        .item__suffix {
+            width: 20%;
+            text-align: right;
+        }
+        input#street,input#city {
+            background: #f0f0f0;
+        }
+        h4.hydrated.fusion-responsive-typography-calculated {
+            font-size: 22px;
+            font-weight: bold;
+            margin: 0px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .item__title p {
+            font-size: 19px;
+            line-height: 100%;
+            font-weight: bold;
+        }
+
+        .net-total {
+            display: flex;
+            border-top: 1px solid #ccc;
+            margin-top: 20px;
+            padding-top: 20px;
+        }
+
+        .total-text {
+            font-weight: bold;
+            line-height: 24px;
+            font-size: 18px;
+        }
+
+        span.scratch-price.hydrated {
+            text-decoration: line-through;
+            margin-right: 14px;
+            color: #7a7a7a;
+            font-size: 18px;
+        }
+        span.hydrated {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        input.wpcf7-form-control.has-spinner.wpcf7-submit {
+            width: 100%;
+            border-radius: 0px;
+            border-radius: 5px;
+            padding: 0px;
+        }
+        input.wpcf7-form-control.has-spinner.wpcf7-submit {
+            background: #2b2b3c;
+            padding: 14px 0px;
+        }
+        input.wpcf7-form-control.has-spinner.wpcf7-submit:hover {
+            opacity: 0.8;
+        }
+        p.result .modal-details {
+            padding: 10px 15px;
+            display: inline-block;
+            font-size: 20px;
+            color: #155724;
+            border: 1px solid transparent;
+            background-color: #d4edda;
+            font-weight: 700;
+            line-height: 30px;
+            width: 100%;
+        }
+
+        .result.model {
+            padding: 0px;
+        }
+
+        .removeThisLicensePlate{
+            font-size: 0.8em;
+            text-align: right;
+            text-decoration: underline;
+        }
+
+        .addAnotherLicense{
+            display: flex;
+            justify-content: flex-end;
+            font-size: 0.8em;
+        }
+
+        .addAnotherLicense a{
+            text-decoration: underline;
+        }
+
+        .license-plate-box{
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+
+        @media only screen and (max-width: 600px) {
+            input.licenseSubForm[id*='subForm'] {
+                font-size: 32px;
+            }
+        }
+
+    </style>
+    <div class="license-plate-box">
+        <label for="subForm[0]" id="kenteken-input-label">vul hier het kenteken in:</label>
+        <div class="inputgroup kenteken-input-holder">
+            <input type="text" id="subForm[0]" name="i[0]" autocomplete="off" class="kenteken-input licenseSubForm" maxlength="8">
+            <span class="check"></span>
+        </div>
+        <p class="result"></p>
+    </div>
+    <span class="addAnotherLicense"><a href="javascript:;">Add another licenseplate</a></span>
+    <script>
+
+        function updateLicenceCode() {
+            var licenseCode = '';
+            jQuery('.licenseSubForm').each(function(){
+                if(jQuery(this).parents('.license-plate-box').find('.result.model').length){
+                    licenseCode += licenseCode != "" ? ',' : '';
+                    licenseCode += jQuery(this).val();
+                }else{
+                    jQuery('button.submit').attr('disabled',true);
+                }
+            })
+            jQuery("#licensecode").val(licenseCode);
+        }
+
+        jQuery(document).on('click','.removeThisLicensePlate',function(){
+            var THIS = jQuery(this).parents('.license-plate-box');
+            updateLicenceCode();
+            THIS.remove();
+        })
+
+        jQuery(document).on('click','.addAnotherLicense a',function(){
+            var clone = jQuery(this).parent().prev().clone();
+            var currentID = clone.find('.licenseSubForm').attr('id').replace(/\D/g, "");
+            var nextID = parseInt(currentID) + 1;
+            clone.find('input').val("").end();
+            clone.find('.check').removeClass('incorrect');
+            clone.find('.result').removeClass('model').text('');
+            clone.find('label').attr("for","subForm["+nextID+"]");
+            clone.find('.licenseSubForm').attr("id","subForm["+nextID+"]");
+            clone.find('.licenseSubForm').attr("name","i["+nextID+"]");
+            if ( clone.find('.removeThisLicensePlate').length < 1 ){
+                clone.append('<a href="javascript:;" class="removeThisLicensePlate">Remove</a>');
+            }
+            jQuery(clone).insertBefore(jQuery(this).parent());
+        });
+
+        jQuery(document).ready(function() {
+            // Get the input fields and address element
+            /* var input1 = jQuery("#postcode");
+            var input2 = jQuery("#housenumber");
+            var address = jQuery(".address");
+
+            // Attach a keyup event handler to the input fields
+            input1.add(input2).on("keyup", function() {
+              // Check if both inputs are filled
+              if (input1.val() !== "" && input2.val() !== "") {
+                // Remove the "hide" class from the address element
+                address.removeClass("hide");
+              }
+            }); */
+            jQuery('input#street,input#city').attr('readonly',true)
+
+        });
+
+
+        jQuery(document).ready(function($) {
+
+            jQuery('button.submit').attr('disabled',true);
+
+            jQuery(document).on('scOrderComplete', function(event, data) {
+                // Your code here
+                console.log('SureCart form submitted!');
+                jQuery('input.wpcf7-form-control').trigger('click')
+            });
+
+            String.prototype.replaceAll = function(search, replacement) {
+                var target = this;
+                return target.replace(new RegExp(search, 'g'), replacement);
+            };
+            function str_replaceAll(str, search, replacement) {
+                if (typeof str === "undefined") return str;
+                return str.replace(new RegExp(search, 'g'), replacement);
+            }
+
+            function updateKentekenFormat() {
+                var ua = navigator.userAgent.toLowerCase();
+
+                jQuery(".kenteken-input").each(function() {
+                    var original_value = jQuery(this).val();
+                    var tmp = jQuery(this).val();
+                    tmp = str_replaceAll(str_replaceAll(tmp," ",""),"-","");
+                    var i = 0;
+                    var total_kenteken = "";
+                    while (typeof tmp[i] !== "undefined") {
+                        var count1 = (total_kenteken.match(/is/g) || []).length;
+                        if (typeof tmp[i+1] !== "undefined" && $.isNumeric(tmp[i]) !== $.isNumeric(tmp[i+1]) && tmp[i] !== "-" && tmp[i+1] !== "-" && count1 < 2) {
+                            total_kenteken += tmp.substr(i,1)+"-";
+                        } else {
+                            total_kenteken += tmp.substr(i,1);
+                        }
+                        i++;
+                    }
+                    var count2 = (total_kenteken.match(/is/g) || []).length;
+                    if (count2 < 2) {
+                        var i2 = 0;
+                        tmp = total_kenteken.split("-");
+                        while (typeof tmp[i2] !== "undefined") {
+                            if (tmp[i2].length === 4) {
+                                //if (!$.isNumeric(tmp[i2][0])) {
+                                total_kenteken = str_replaceAll(total_kenteken,tmp[i2],tmp[i2][0]+tmp[i2][1]+"-"+tmp[i2][2]+tmp[i2][3]);
+                                //}
+                            }
+                            i2++;
+                        }
+                    }
+
+                    /*if (total_kenteken[total_kenteken.length - 1] === "-") {
+                        total_kenteken = total_kenteken.substr(0,(total_kenteken.length - 1));
+                    }*/
+                    if (total_kenteken.substr(0,1) === "-") {
+                        total_kenteken = total_kenteken.substr(1);
+                    }
+                    tmp = total_kenteken.split("-");
+                    if (tmp.length >= 4) {
+                        total_kenteken = tmp[0]+"-"+tmp[1]+"-";
+                        i = 2;
+                        while (typeof tmp[i] !== "undefined") {
+                            total_kenteken += tmp[i];
+                            i++;
+                        }
+                    }
+                    if (total_kenteken.toUpperCase() !== original_value) {
+                        jQuery(this).val(total_kenteken.toUpperCase());
+                    }
+                });
+            }
+            updateKentekenFormat();
+            jQuery(document).on('keyup', ".kenteken-input", (function() {
+                updateKentekenFormat();
+                if (str_replaceAll(jQuery(this).val(),"-","").length >= 6) {
+                    //jQuery("#kenteken-input-label").removeClass("failedtofind").html("vul hier het kenteken in:");
+                }
+            }));
+
+            jQuery(document).on('change', 'input.licenseSubForm',function() {
+                //if (jQuery(this).val().length === 6) {
+                var THIS = jQuery(this).parents('.license-plate-box');
+                updateLicenceCode();
+                if (jQuery(this).val().length < 9) {
+                    const plateNo = jQuery(this).val();
+                    const newPlateNo = plateNo.replace(/-/g, "")
+                    jQuery.ajax({
+                        url: 'https://milieustickers.com/wp-admin/admin-ajax.php',
+                        type: 'POST',
+                        data: {
+                            action: 'verify_license_no',
+                            // licenseNo: jQuery(this).val(),
+                            licenseNo: newPlateNo,
+                        },
+                        success: function(response) {
+
+                            console.log(response);
+                            let res = JSON.parse(response);
+                            console.log(res);
+                            if (res.status == "true") {
+                                if(res.merk!=='') {
+                                    THIS.find('.result').addClass('model')
+                                    THIS.find('.check').removeClass('incorrect')
+                                    THIS.find('.check').removeClass('correct')
+                                    THIS.find('.result').html('<div class="modal-details">Merk : '+res.merk+' | Model : '+res.handelsbenaming+"</div>")
+                                    jQuery('button.submit').attr('disabled',false);
+
+                                } else {
+                                    THIS.find('.result').removeClass('model')
+                                    THIS.find('.check').removeClass('incorrect')
+                                    THIS.find('.check').addClass('correct')
+                                    THIS.find('.result').html('Uw voertuig heeft een groene milieusticker nodig')
+                                    jQuery('button.submit').attr('disabled',false);
+                                }
+                            } else {
+                                THIS.find('.result').removeClass('model')
+                                THIS.find('.check').removeClass('correct')
+                                THIS.find('.check').addClass('incorrect')
+                                THIS.find('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
+                            }
+                            updateLicenceCode();
+                            /*
+                            if(res.brandstof_omschrijving == "Elektriciteit") {
+                                jQuery('.check').removeClass('incorrect')
+                                jQuery('.check').addClass('correct')
+                                jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
+                            } else {
+                                jQuery('.check').removeClass('correct')
+                                jQuery('.check').addClass('incorrect')
+                                jQuery('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
+                            }
+
+                            if(res.length == 1) {
+                                jQuery('.check').removeClass('incorrect')
+                                jQuery('.check').addClass('correct')
+                                jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
+                            } else {
+                                jQuery('.check').removeClass('correct')
+                                jQuery('.check').addClass('incorrect')
+                                jQuery('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
+                            } */
                         },
                         error: function(jqXHR, textStatus, errorThrown) {
                             console.error(errorThrown); // Handle any error that occurs during the AJAX request
@@ -447,6 +996,7 @@ function license_plate_check( $atts ) {
     return ob_get_clean();
 }
 add_shortcode( 'license_plate_check', 'license_plate_check' );
+add_shortcode( 'license_plate_check_development', 'license_plate_check_development' );
 
 add_action('wp_ajax_verify_license_no', 'verify_license_no');
 add_action('wp_ajax_nopriv_verify_license_no', 'verify_license_no'); // For non-logged-in users
