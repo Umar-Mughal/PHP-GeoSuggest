@@ -2,6 +2,8 @@
 
 function theme_enqueue_styles() {
     wp_enqueue_style( 'child-style', get_stylesheet_directory_uri() . '/style.css', [] );
+    wp_enqueue_style( 'AutocompleteAddress',get_stylesheet_directory_uri(). '/AutocompleteAddress/AutocompleteAddress.css');
+    wp_enqueue_script( 'AutocompleteAddress',get_stylesheet_directory_uri(). '/AutocompleteAddress/AutocompleteAddress.min.js');
 }
 add_action( 'wp_enqueue_scripts', 'theme_enqueue_styles', 20 );
 
@@ -293,7 +295,7 @@ function license_plate_check( $atts ) {
         </div>
         <p class="result"></p>
     </div>
-    <span class="addAnotherLicense"><a href="javascript:;">Add another licenseplate</a></span>
+    <!-- <span class="addAnotherLicense"><a href="javascript:;">Add another licenseplate</a></span> -->
     <script>
 
         function updateLicenceCode() {
@@ -326,7 +328,7 @@ function license_plate_check( $atts ) {
             clone.find('.licenseSubForm').attr("id","subForm["+nextID+"]");
             clone.find('.licenseSubForm').attr("name","i["+nextID+"]");
             if ( clone.find('.removeThisLicensePlate').length < 1 ){
-                clone.append('<a href="javascript:;" class="removeThisLicensePlate">Remove</a>');
+                clone.append('<a href="javascript:;" class="removeThisLicensePlate">verwijder</a>');
             }
             jQuery(clone).insertBefore(jQuery(this).parent());
         });
@@ -503,6 +505,36 @@ function license_plate_check( $atts ) {
     <?php
     return ob_get_clean();
 }
+
+if ( isset($_GET) && $_GET['postcode'] && $_GET['postcode'] != '' ){
+
+    $curl = curl_init();
+
+    $_GET['postcode'] = str_replace(' ','%20',$_GET['postcode']);
+
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://api.postcode.eu/international/v1/'.$_GET['postcode'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_HTTPHEADER => array(
+            'X-Autocomplete-Session: asdasdsdad21asd2a32a1d23as1',
+            'Authorization: Basic d0d0UjVyUmxtQWprTlo3R2t2WVlKVXNaZnZJT1BaaXZFSnpmeEZ5aUs4MzpYRFYwMG10TEpmWTY4SkN1RTJaWGZrTHZXdXNHMk9yYVFWcHFRRTBaNVpHbDF2SVYyOA=='
+        ),
+    ));
+
+    $response = curl_exec($curl);
+
+    curl_close($curl);
+    echo $response;
+    die;
+}
+
+
 function license_plate_check_development( $atts ) {
     ob_start();
     ?>
@@ -524,7 +556,7 @@ function license_plate_check_development( $atts ) {
             display: flex;
             margin-bottom: 20px;
             margin-bottom: 10px;
-            border: 2px solid #000;
+            border: 2px solid #da2f22;
             border-radius: 7px;
         }
 
@@ -542,7 +574,7 @@ function license_plate_check_development( $atts ) {
         }
 
         input.licenseSubForm[id*='subForm'] {
-            background: #f0b504 none repeat scroll 0 0;
+            background: white;
             border-radius: 0px 5px 5px 0px;
             min-height: 55px;
             padding: 6px 4px 6px 5px;
@@ -552,7 +584,7 @@ function license_plate_check_development( $atts ) {
             text-transform: uppercase;
             font-weight: 700;
             margin: 0px;
-            color:black;
+            color: #da2f22;
         }
 
         span.check.correct {
@@ -770,6 +802,22 @@ function license_plate_check_development( $atts ) {
             padding-bottom: 10px;
         }
 
+        .autocomplete-result {
+            margin-top: 20px;
+            padding: 20px;
+            color: #006909;
+            background-color: #c7dfc7;
+        }
+
+        .autocomplete-result:empty {
+            padding: 0;
+            margin: 0;
+        }
+
+        .autocomplete-result-int {
+            margin-bottom: 0;
+        }
+
         @media only screen and (max-width: 600px) {
             input.licenseSubForm[id*='subForm'] {
                 font-size: 32px;
@@ -785,26 +833,32 @@ function license_plate_check_development( $atts ) {
         </div>
         <p class="result"></p>
     </div>
-    <span class="addAnotherLicense"><a href="javascript:;">Add another licenseplate</a></span>
+    <span class="addAnotherLicense"><a href="javascript:;">voeg nog een kenteken toe</a></span>
     <script>
 
         function updateLicenceCode() {
             var licenseCode = '';
+            var totalAmount = 0;
             jQuery('.licenseSubForm').each(function(){
                 if(jQuery(this).parents('.license-plate-box').find('.result.model').length){
                     licenseCode += licenseCode != "" ? ',' : '';
                     licenseCode += jQuery(this).val();
+                    totalAmount += 12.50;
                 }else{
                     jQuery('button.submit').attr('disabled',true);
                 }
             })
             jQuery("#licensecode").val(licenseCode);
+            jQuery('input[name="pronamic_pay_amount"]').val(totalAmount.toFixed(2));
+            jQuery('.totalAmount').each(function(){
+                jQuery(this).text('€'+totalAmount.toFixed(2));
+            });
         }
 
         jQuery(document).on('click','.removeThisLicensePlate',function(){
             var THIS = jQuery(this).parents('.license-plate-box');
-            updateLicenceCode();
             THIS.remove();
+            updateLicenceCode();
         })
 
         jQuery(document).on('click','.addAnotherLicense a',function(){
@@ -818,12 +872,44 @@ function license_plate_check_development( $atts ) {
             clone.find('.licenseSubForm').attr("id","subForm["+nextID+"]");
             clone.find('.licenseSubForm').attr("name","i["+nextID+"]");
             if ( clone.find('.removeThisLicensePlate').length < 1 ){
-                clone.append('<a href="javascript:;" class="removeThisLicensePlate">Remove</a>');
+                clone.append('<a href="javascript:;" class="removeThisLicensePlate">verwijder</a>');
             }
             jQuery(clone).insertBefore(jQuery(this).parent());
         });
 
         jQuery(document).ready(function() {
+
+
+            let inputElement = document.querySelector('input[name="pronamic_pay_address"]'),
+                resultElement = document.querySelector('.autocomplete-result'),
+                form = document.querySelector('.wpcf7-form');
+
+            autocomplete = new PostcodeNl.AutocompleteAddress(inputElement, {
+                autocompleteUrl: '<?php echo site_url('?postcode=autocomplete')?>', // Required
+                addressDetailsUrl: '<?php echo site_url('?postcode=address')?>', // Required
+            });
+
+            inputElement.addEventListener('autocomplete-select', function (e) {
+                if (e.detail.precision === 'Address')
+                {
+                    autocomplete.getDetails(e.detail.context, function (result) {
+                        const fields = ['locality', 'postcode', 'street', 'building'];
+
+                        for (let i = 0, field; field = fields[i++];)
+                        {
+                            form.elements[field].value = result.address[field];
+                        }
+
+                        if (typeof result.mailLines !== 'undefined')
+                        {
+                            // Show the address.
+                            resultElement.innerHTML = result.mailLines.join('<br>');
+                            jQuery('.autocomplete-result').show();
+                        }
+                    });
+                }
+            });
+
             // Get the input fields and address element
             /* var input1 = jQuery("#postcode");
             var input2 = jQuery("#housenumber");
