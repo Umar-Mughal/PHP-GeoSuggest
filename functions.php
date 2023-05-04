@@ -564,7 +564,7 @@ function license_plate_check_development( $atts ) {
             content: " ";
             background-color: #2b4c9c;
             border-radius: 3px 0 0 3px;
-            background-image: url(https://milieustickers.com/wp-content/uploads/2023/02/kenteken_eu.png);
+            background-image: url(https://milieustickers.com/wp-content/uploads/2023/05/kenteken_b.png);
             background-size: 48% auto;
             background-position: center;
             background-repeat: no-repeat;
@@ -818,6 +818,10 @@ function license_plate_check_development( $atts ) {
             margin-bottom: 0;
         }
 
+        .qty{
+            margin: 10px;
+        }
+
         @media only screen and (max-width: 600px) {
             input.licenseSubForm[id*='subForm'] {
                 font-size: 32px;
@@ -839,11 +843,13 @@ function license_plate_check_development( $atts ) {
         function updateLicenceCode() {
             var licenseCode = '';
             var totalAmount = 0;
+            var totalQty = 0;
             jQuery('.licenseSubForm').each(function(){
                 if(jQuery(this).parents('.license-plate-box').find('.result.model').length){
                     licenseCode += licenseCode != "" ? ',' : '';
                     licenseCode += jQuery(this).val();
                     totalAmount += 12.50;
+                    totalQty += 1;
                 }else{
                     jQuery('button.submit').attr('disabled',true);
                 }
@@ -853,6 +859,7 @@ function license_plate_check_development( $atts ) {
             jQuery('.totalAmount').each(function(){
                 jQuery(this).text('€'+totalAmount.toFixed(2));
             });
+            jQuery('.qty').text(totalQty+'x');
         }
 
         jQuery(document).on('click','.removeThisLicensePlate',function(){
@@ -888,6 +895,8 @@ function license_plate_check_development( $atts ) {
                 autocompleteUrl: '<?php echo site_url('?postcode=autocomplete')?>', // Required
                 addressDetailsUrl: '<?php echo site_url('?postcode=address')?>', // Required
             });
+
+            autocomplete.setCountry('bel');
 
             inputElement.addEventListener('autocomplete-select', function (e) {
                 if (e.detail.precision === 'Address')
