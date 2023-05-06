@@ -902,11 +902,13 @@ function license_plate_check_development( $atts ) {
                 if (e.detail.precision === 'Address')
                 {
                     autocomplete.getDetails(e.detail.context, function (result) {
-                        const fields = ['locality', 'postcode', 'street', 'building'];
+                        const fields = [{"locality":"pronamic_pay_address_city"}, {"postcode":"pronamic_pay_address_postal_code"}, {"street":"pronamic_pay_address_line_1"}, {"building":"pronamic_pay_address_line_2"}];
 
                         for (let i = 0, field; field = fields[i++];)
                         {
-                            form.elements[field].value = result.address[field];
+                            keys = Object.keys(field);
+                            console.log(keys);
+                            form.elements[field[keys[0]]].value = result.address[keys[0]];
                         }
 
                         if (typeof result.mailLines !== 'undefined')
