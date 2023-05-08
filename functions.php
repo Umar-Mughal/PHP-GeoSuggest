@@ -295,43 +295,7 @@ function license_plate_check( $atts ) {
         </div>
         <p class="result"></p>
     </div>
-    <!-- <span class="addAnotherLicense"><a href="javascript:;">Add another licenseplate</a></span> -->
     <script>
-
-        function updateLicenceCode() {
-            var licenseCode = '';
-            jQuery('.licenseSubForm').each(function(){
-                if(jQuery(this).parents('.license-plate-box').find('.result.model').length){
-                    licenseCode += licenseCode != "" ? ',' : '';
-                    licenseCode += jQuery(this).val();
-                }else{
-                    jQuery('button.submit').attr('disabled',true);
-                }
-            })
-            jQuery("#licensecode").val(licenseCode);
-        }
-
-        jQuery(document).on('click','.removeThisLicensePlate',function(){
-            var THIS = jQuery(this).parents('.license-plate-box');
-            updateLicenceCode();
-            THIS.remove();
-        })
-
-        jQuery(document).on('click','.addAnotherLicense a',function(){
-            var clone = jQuery(this).parent().prev().clone();
-            var currentID = clone.find('.licenseSubForm').attr('id').replace(/\D/g, "");
-            var nextID = parseInt(currentID) + 1;
-            clone.find('input').val("").end();
-            clone.find('.check').removeClass('incorrect');
-            clone.find('.result').removeClass('model').text('');
-            clone.find('label').attr("for","subForm["+nextID+"]");
-            clone.find('.licenseSubForm').attr("id","subForm["+nextID+"]");
-            clone.find('.licenseSubForm').attr("name","i["+nextID+"]");
-            if ( clone.find('.removeThisLicensePlate').length < 1 ){
-                clone.append('<a href="javascript:;" class="removeThisLicensePlate">verwijder</a>');
-            }
-            jQuery(clone).insertBefore(jQuery(this).parent());
-        });
 
         jQuery(document).ready(function() {
             // Get the input fields and address element
@@ -434,7 +398,6 @@ function license_plate_check( $atts ) {
             jQuery(document).on('change', 'input.licenseSubForm',function() {
                 //if (jQuery(this).val().length === 6) {
                 var THIS = jQuery(this).parents('.license-plate-box');
-                updateLicenceCode();
                 if (jQuery(this).val().length < 9) {
                     const plateNo = jQuery(this).val();
                     const newPlateNo = plateNo.replace(/-/g, "")
@@ -466,13 +429,13 @@ function license_plate_check( $atts ) {
                                     THIS.find('.result').html('Uw voertuig heeft een groene milieusticker nodig')
                                     jQuery('button.submit').attr('disabled',false);
                                 }
+                                jQuery("#licensecode").val(newPlateNo);
                             } else {
                                 THIS.find('.result').removeClass('model')
                                 THIS.find('.check').removeClass('correct')
                                 THIS.find('.check').addClass('incorrect')
                                 THIS.find('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
                             }
-                            updateLicenceCode();
                             /*
                             if(res.brandstof_omschrijving == "Elektriciteit") {
                                 jQuery('.check').removeClass('incorrect')
@@ -506,7 +469,7 @@ function license_plate_check( $atts ) {
     return ob_get_clean();
 }
 
-if ( isset($_GET) && $_GET['postcode'] && $_GET['postcode'] != '' ){
+if ( isset($_GET) && isset($_GET['postcode']) && $_GET['postcode'] != '' ){
 
     $curl = curl_init();
 
@@ -1021,71 +984,77 @@ function license_plate_check_development( $atts ) {
             jQuery(document).on('change', 'input.licenseSubForm',function() {
                 //if (jQuery(this).val().length === 6) {
                 var THIS = jQuery(this).parents('.license-plate-box');
-                updateLicenceCode();
                 if (jQuery(this).val().length < 9) {
                     const plateNo = jQuery(this).val();
                     const newPlateNo = plateNo.replace(/-/g, "")
-                    jQuery.ajax({
-                        url: 'https://milieustickers.com/wp-admin/admin-ajax.php',
-                        type: 'POST',
-                        data: {
-                            action: 'verify_license_no',
-                            // licenseNo: jQuery(this).val(),
-                            licenseNo: newPlateNo,
-                        },
-                        success: function(response) {
 
-                            console.log(response);
-                            let res = JSON.parse(response);
-                            console.log(res);
-                            if (res.status == "true") {
-                                if(res.merk!=='') {
-                                    THIS.find('.result').addClass('model')
-                                    THIS.find('.check').removeClass('incorrect')
-                                    THIS.find('.check').removeClass('correct')
-                                    THIS.find('.result').html('<div class="modal-details">Merk : '+res.merk+' | Model : '+res.handelsbenaming+"</div>")
-                                    jQuery('button.submit').attr('disabled',false);
+                    THIS.find('.result').addClass('model')
+                    THIS.find('.check').removeClass('incorrect')
+                    THIS.find('.check').removeClass('correct')
+                    //THIS.find('.result').html('<div class="modal-details">Merk : '+res.merk+' | Model : '+res.handelsbenaming+"</div>")
+                    jQuery('button.submit').attr('disabled',false);
+                    // jQuery.ajax({
+                    //     url: 'https://milieustickers.com/wp-admin/admin-ajax.php',
+                    //     type: 'POST',
+                    //     data: {
+                    //         action: 'verify_license_no',
+                    //         // licenseNo: jQuery(this).val(),
+                    //         licenseNo: newPlateNo,
+                    //     },
+                    //     success: function(response) {
 
-                                } else {
-                                    THIS.find('.result').removeClass('model')
-                                    THIS.find('.check').removeClass('incorrect')
-                                    THIS.find('.check').addClass('correct')
-                                    THIS.find('.result').html('Uw voertuig heeft een groene milieusticker nodig')
-                                    jQuery('button.submit').attr('disabled',false);
-                                }
-                            } else {
-                                THIS.find('.result').removeClass('model')
-                                THIS.find('.check').removeClass('correct')
-                                THIS.find('.check').addClass('incorrect')
-                                THIS.find('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
-                            }
-                            updateLicenceCode();
-                            /*
-                            if(res.brandstof_omschrijving == "Elektriciteit") {
-                                jQuery('.check').removeClass('incorrect')
-                                jQuery('.check').addClass('correct')
-                                jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
-                            } else {
-                                jQuery('.check').removeClass('correct')
-                                jQuery('.check').addClass('incorrect')
-                                jQuery('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
-                            }
+                    //         console.log(response);
+                    //         let res = JSON.parse(response);
+                    //         console.log(res);
+                    //         if (res.status == "true") {
+                    //             if(res.merk!=='') {
+                    //                 THIS.find('.result').addClass('model')
+                    //                 THIS.find('.check').removeClass('incorrect')
+                    //                 THIS.find('.check').removeClass('correct')
+                    //                 THIS.find('.result').html('<div class="modal-details">Merk : '+res.merk+' | Model : '+res.handelsbenaming+"</div>")
+                    //                 jQuery('button.submit').attr('disabled',false);
 
-                            if(res.length == 1) {
-                                jQuery('.check').removeClass('incorrect')
-                                jQuery('.check').addClass('correct')
-                                jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
-                            } else {
-                                jQuery('.check').removeClass('correct')
-                                jQuery('.check').addClass('incorrect')
-                                jQuery('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
-                            } */
-                        },
-                        error: function(jqXHR, textStatus, errorThrown) {
-                            console.error(errorThrown); // Handle any error that occurs during the AJAX request
-                        }
-                    });
+                    //             } else {
+                    //                 THIS.find('.result').removeClass('model')
+                    //                 THIS.find('.check').removeClass('incorrect')
+                    //                 THIS.find('.check').addClass('correct')
+                    //                 THIS.find('.result').html('Uw voertuig heeft een groene milieusticker nodig')
+                    //                 jQuery('button.submit').attr('disabled',false);
+                    //             }
+                    //         } else {
+                    //             THIS.find('.result').removeClass('model')
+                    //             THIS.find('.check').removeClass('correct')
+                    //             THIS.find('.check').addClass('incorrect')
+                    //             THIS.find('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
+                    //         }
+                    //         updateLicenceCode();
+                    //         /*
+                    //         if(res.brandstof_omschrijving == "Elektriciteit") {
+                    //             jQuery('.check').removeClass('incorrect')
+                    //             jQuery('.check').addClass('correct')
+                    //             jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
+                    //         } else {
+                    //             jQuery('.check').removeClass('correct')
+                    //             jQuery('.check').addClass('incorrect')
+                    //             jQuery('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
+                    //         }
+
+                    //         if(res.length == 1) {
+                    //             jQuery('.check').removeClass('incorrect')
+                    //             jQuery('.check').addClass('correct')
+                    //             jQuery('.result').html('Uw voertuig heeft een groene milieusticker nodig')
+                    //         } else {
+                    //             jQuery('.check').removeClass('correct')
+                    //             jQuery('.check').addClass('incorrect')
+                    //             jQuery('.result').html('Uw voertuig komt niet in aanmerking voor een groene milieusticker')
+                    //         } */
+                    //     },
+                    //     error: function(jqXHR, textStatus, errorThrown) {
+                    //         console.error(errorThrown); // Handle any error that occurs during the AJAX request
+                    //     }
+                    // });
                 }
+                updateLicenceCode();
             });
         });
     </script>
