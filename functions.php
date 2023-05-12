@@ -1,5 +1,4 @@
 <?php
-
 function theme_enqueue_styles() {
     wp_enqueue_style( 'child-style', get_stylesheet_directory_uri() . '/style.css', [] );
     wp_enqueue_style( 'AutocompleteAddress',get_stylesheet_directory_uri(). '/AutocompleteAddress/AutocompleteAddress.css');
@@ -429,7 +428,7 @@ function license_plate_check( $atts ) {
                                     THIS.find('.result').html('Uw voertuig heeft een groene milieusticker nodig')
                                     jQuery('button.submit').attr('disabled',false);
                                 }
-                                jQuery("#licensecode").val(newPlateNo);
+                                jQuery("#licensecode").val(plateNo);
                             } else {
                                 THIS.find('.result').removeClass('model')
                                 THIS.find('.check').removeClass('correct')
